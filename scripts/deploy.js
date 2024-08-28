@@ -1,13 +1,18 @@
 async function main() {
-    const CoinFlip = await ethers.getContractFactory("CoinFlip");
-    const coinFlip = await CoinFlip.deploy();
-    await coinFlip.deployed();
-    console.log("CoinFlip deployed to: ", coinFlip.address);
+    const [deployer] = await ethers.getSigners();
+
+    console.log("Deploying contracts with the account:", deployer.address);
+
+    const NewCoinFlip = await ethers.getContractFactory("NewCoinFlip");
+    const contract = await NewCoinFlip.deploy({ value: ethers.utils.parseEther("1.0") });  // Deploy with 1 ETH
+
+    console.log("NewCoinFlip deployed to:", contract.address);
 }
 
-main() 
+main()
     .then(() => process.exit(0))
-    .catch(error => {
+    .catch((error) => {
         console.error(error);
         process.exit(1);
     });
+

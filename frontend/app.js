@@ -5,30 +5,52 @@ const result = document.getElementById('result');
 let provider;
 let signer;
 let coinFlipContract;
+const contractAddress = '0xEcf6880006188926C7D7Eac15Be994Cf7A4083e0'; // Your new contract address
 
+// Function to send ETH to the contract
+const sendETHToContract = async () => {
+    try {
+        const tx = await signer.sendTransaction({
+            to: contractAddress, // Your contract address
+            value: ethers.utils.parseEther("1"), // Sending 1 ETH to the contract
+            gasLimit: 3000000 // Set a higher gas limit
+        });
+        await tx.wait();
+        console.log('Sent 1 ETH to contract');
+        alert('1 ETH sent to the contract!');
+    } catch (error) {
+        console.error('Failed to send ETH to contract', error);
+        alert('Failed to send ETH to contract');
+    }
+};
 
-//This function runs when the "Connect Wallet" button is clicked
+// Function to check the contract's balance
+async function getContractBalance() {
+    const balance = await provider.getBalance(contractAddress);
+    console.log("Contract balance:", ethers.utils.formatEther(balance), "ETH");
+    return balance;
+}
+
+// This function runs when the "Connect Wallet" button is clicked
 connectButton.onclick = async () => {
-    if (typeof window.ethereum !== 'undefined') { 
-        console.log('Metamask is installed'); 
-        try {
-            //Request account access if needed
-            await window.ethereum.request({ method: 'eth_requestAccounts'});
+    try {
+        // Create an ethers provider connected to your local Ganache instance
+        provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545");
+        const accounts = await provider.listAccounts(); // List available accounts in Ganache
+        signer = provider.getSigner(accounts[0]); // Use the first Ganache account as the signer
 
-            // Create an ethers provider and signer from MetaMask
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-    
-            //Replace with your deployed contract address
-    
-    
-        const contractAddress = '0xC4001566a0354C5A7cBfE8a68d08b159019AF06C'; // Deployment contract address
-        // Replace with your contract's ABI
         const abi = [
             {
               "inputs": [],
-              "stateMutability": "nonpayable",
+              "stateMutability": "payable",
               "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "deposit",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
             },
             {
               "inputs": [
@@ -39,8 +61,27 @@ connectButton.onclick = async () => {
                 }
               ],
               "name": "flipCoin",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
               "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "getBalance",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -57,39 +98,52 @@ connectButton.onclick = async () => {
               "type": "function"
             },
             {
-              "inputs": [],
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
               "name": "withdraw",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             }
-    ];
+          ];
 
-    // Initialize the contract with the provider, ABI, and contract address
-    coinFlipContract = new ethers.Contract(contractAddress, abi, signer);
-    console.log('Connected to MetaMask');
+        // Initialize the contract with the provider, ABI, and contract address
+        coinFlipContract = new ethers.Contract(contractAddress, abi, signer);
+
+        console.log('Connected to Ganache and Contract');
+        
+        // Check the contract's balance
+        await getContractBalance();
+
     } catch (error) {
-        console.error('Error connecting to MetaMask', error);
-        alert('Failed to connect to MetaMask');
-        }
-    } else {
-        alert ('Please install MetaMask');
+        console.error('Error connecting to Ganache', error);
+        alert('Failed to connect to Ganache');
     }
 };
 
-
-// This functiom runs when the "Flip Coin" button is clicked
+// This function runs when the "Flip Coin" button is clicked
 flipButton.onclick = async () => {
     if (coinFlipContract) {
         try {
-            // Call flipCoin with a guess of true (this can be changed to allow user input)
-            const tx = await coinFlipContract.flipCoin(true, { value: ethers.utils.parseEther("0.01")});
+            console.log('Flipping the coin...');
+            const tx = await coinFlipContract.flipCoin(true, { value: ethers.utils.parseEther("0.01"), gasLimit: 3000000 }); // Send 0.01 ETH with the transaction
+            console.log('Transaction:', tx);
             await tx.wait();
             result.textContent = 'Coin flipped successfully';
-            } catch (error) {
-                result.textContent = 'Transaction failed';
-            }
+        } catch (error) {
+            console.error('Transaction failed', error);
+            result.textContent = 'Transaction failed: ' + error.message;
+        }
     } else {
         alert('Please connect your wallet first');
     }
 };
+
+
+
+
