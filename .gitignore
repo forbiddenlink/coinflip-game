@@ -1,0 +1,9 @@
+# Ignore environment variable files
+.env
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore any OS or editor-specific files
+.DS_Store
+*.log
